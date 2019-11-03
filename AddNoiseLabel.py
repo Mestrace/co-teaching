@@ -29,7 +29,7 @@ def addRandomNoiseToTrainingSet(data, noise_level):
     return x_data_set, label_data_revise
 
 
-def label_random_flip(labels, prob, num_classes=None):
+def label_random_flip(labels, prob, num_classes):
     '''Random flipping of the labels
     :param labels: input labels
     :param prob: the probability of random flip
@@ -37,8 +37,6 @@ def label_random_flip(labels, prob, num_classes=None):
     :return: a label tensor with random flipping-noise added
     '''
     assert 0 < prob <= 0.5, "The flip probablity must between (0, 0.5] for the learning to be effective"
-    if num_classes == None:
-        num_classes = tf.math.reduce_max(labels) + 1
 
     # flip is a binary tensor specifies whether label at location i is flipped or not, shape = labels.shape
     flip = tf.random.stateless_categorical(tf.math.log([[1 - prob, prob]]),
