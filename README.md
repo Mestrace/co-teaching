@@ -12,5 +12,5 @@ This repository contains a commandline program for training co-teaching models (
 ## Run on Google Cloud
 
 ```bash
-gcloud ai-platform jobs submit training <job name> --package-path cot --module-name cot.task --region us-east1 --python-version 3.5 --runtime-version 1.14 --job-dir gs://co-training-project/keras --scale-tier BASIC_GPU
+gcloud ai-platform jobs submit training <job name> --package-path cot --module-name cot.task --region us-east1 --python-version 3.5 --runtime-version 1.14 --job-dir gs://<your-bucket-name> --scale-tier BASIC_GPU
 ```

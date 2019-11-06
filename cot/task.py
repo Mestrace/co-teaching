@@ -56,6 +56,10 @@ def get_args():
 
 
 def gather_remembered(model, X, y, remember_rate, to_be_gathered):
+    """Wrapper over selective_remember
+    As we evaluate per-instance loss in selective_remember, we use the non-reduction version of the loss function compiled into the model
+    Then we map the selected indices to the tensor to be gathered.
+    """
     loss_func = model.loss.__class__(reduction='none')
     selected_indices = selective_remember(model, X, y, loss_func, remember_rate)
 
@@ -71,6 +75,8 @@ def train_and_evaluate(args):
     Args:
         args: dictionary of arguments - see get_args() for details
     """
+
+    # Prepare data
     (train_images, train_labels), (
         test_images,
         test_labels,
@@ -81,12 +87,16 @@ def train_and_evaluate(args):
         tf.cast(train_images / 255.0, dtype=tf.float32),
         tf.cast(test_images / 255.0, dtype=tf.float32),
     )
+    num_classes = 10
 
+    # Hyper parameters
     noise_rate = 0.45
     batch_size = 128
+    num_epochs = 200
+    max_remember_epoch = 50
+    forget_rate = noise_rate
 
-    noisy_data = cot_noise.label_random_flip(train_labels, noise_rate, 10)
-
+    # Prepare model
     model1 = cot_models.CNN()
     model2 = cot_models.CNN()
 
@@ -101,6 +111,9 @@ def train_and_evaluate(args):
         optimizer="adam",
         metrics=[tf.keras.metrics.SparseCategoricalAccuracy()],
     )
+
+    # Prepare datasets
+    noisy_data = cot_noise.label_random_flip(train_labels, noise_rate, num_classes)
 
     train_dataset1 = (
         tf.data.Dataset.from_tensor_slices((train_images, train_labels, noisy_data))
@@ -117,20 +130,21 @@ def train_and_evaluate(args):
 
     test_dataset = (
         tf.data.Dataset.from_tensor_slices((test_images, test_labels))
-        .batch(128)
+        .batch(batch_size)
         .prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
     )
 
-    num_epochs = 200
-    max_remember_epoch = 50
-    forget_rate = noise_rate
-
+    # Epoch statistics from evaluation
     model1_evaluate_history = []
     model2_evaluate_history = []
 
+    # Training
     for current_epoch in range(num_epochs):
+        # Calculate remember rate for each epoch 
         remember_rate = 1 - forget_rate * min((current_epoch + 1) / max_remember_epoch, 1)
+
         print("Epoch %d, remember_rate %.4f" % (current_epoch, remember_rate))
+        
         train_start_time = time()
         for _, ((X1, y1, ny1), (X2, y2, ny2)) in enumerate(zip(train_dataset1, train_dataset2)):
             X1, y1, ny1 = gather_remembered(
@@ -143,6 +157,7 @@ def train_and_evaluate(args):
             model1.train_on_batch(X2, ny2, reset_metrics=False)
             model2.train_on_batch(X1, ny1, reset_metrics=False)
         train_end_time = time()
+        
         print("Epoch %d finished, time %d" % (current_epoch, train_end_time - train_start_time))
 
         model1_evaluate_history.append(model1.evaluate(test_dataset))
