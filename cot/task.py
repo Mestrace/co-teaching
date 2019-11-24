@@ -60,12 +60,13 @@ def gather_remembered(model, X, y, remember_rate, to_be_gathered):
     As we evaluate per-instance loss in selective_remember, we use the non-reduction version of the loss function compiled into the model
     Then we map the selected indices to the tensor to be gathered.
     """
-    loss_func = model.loss.__class__(reduction='none')
+    loss_func = model.loss.__class__(reduction="none")
     selected_indices = selective_remember(model, X, y, loss_func, remember_rate)
 
     return tuple(
         map(lambda tensor: tf.gather(tensor, selected_indices), to_be_gathered)
     )
+
 
 def train_and_evaluate(args):
     """Trains and evaluates the Keras model.
@@ -75,11 +76,9 @@ def train_and_evaluate(args):
     Args:
         args: dictionary of arguments - see get_args() for details
     """
-
-    # Prepare data
-    (train_images, train_labels), (
-        test_images,
-        test_labels,
+    (
+        (train_images, train_labels),
+        (test_images, test_labels,),
     ) = datasets.cifar10.load_data()
 
     # Normalize pixel values to be between 0 and 1
@@ -97,8 +96,8 @@ def train_and_evaluate(args):
     forget_rate = noise_rate
 
     # Prepare model
-    model1 = cot_models.CNN()
-    model2 = cot_models.CNN()
+    model1 = cot_models.CNN(shape=train_images.shape[1:], num_classes=10)
+    model2 = cot_models.mobilenetv1(shape=train_images.shape[1:], num_classes=10)
 
     model1.compile(
         loss=tf.keras.losses.SparseCategoricalCrossentropy(),
@@ -140,13 +139,15 @@ def train_and_evaluate(args):
 
     # Training
     for current_epoch in range(num_epochs):
-        # Calculate remember rate for each epoch 
-        remember_rate = 1 - forget_rate * min((current_epoch + 1) / max_remember_epoch, 1)
-
+        remember_rate = 1 - forget_rate * min(
+            (current_epoch + 1) / max_remember_epoch, 1
+        )
         print("Epoch %d, remember_rate %.4f" % (current_epoch, remember_rate))
-        
+
         train_start_time = time()
-        for _, ((X1, y1, ny1), (X2, y2, ny2)) in enumerate(zip(train_dataset1, train_dataset2)):
+        for _, ((X1, y1, ny1), (X2, y2, ny2)) in enumerate(
+            zip(train_dataset1, train_dataset2)
+        ):
             X1, y1, ny1 = gather_remembered(
                 model1, X1, ny1, remember_rate, (X1, y1, ny1)
             )
@@ -157,8 +158,10 @@ def train_and_evaluate(args):
             model1.train_on_batch(X2, ny2, reset_metrics=False)
             model2.train_on_batch(X1, ny1, reset_metrics=False)
         train_end_time = time()
-        
-        print("Epoch %d finished, time %d" % (current_epoch, train_end_time - train_start_time))
+        print(
+            "Epoch %d finished, time %d s"
+            % (current_epoch, train_end_time - train_start_time)
+        )
 
         model1_evaluate_history.append(model1.evaluate(test_dataset))
         model2_evaluate_history.append(model2.evaluate(test_dataset))
@@ -168,9 +171,10 @@ def train_and_evaluate(args):
 
         model1.reset_metrics()
         model2.reset_metrics()
-    
+
     print(model1_evaluate_history)
     print(model2_evaluate_history)
+
 
 if __name__ == "__main__":
     args = get_args()

@@ -5,12 +5,11 @@ from tensorflow.keras import models, layers
 lrelu = lambda features: tf.nn.leaky_relu(features, alpha=0.01)
 
 
-def CNN(width: int, height: int, depth: int, num_classes: int):
+def CNN(shape, num_classes: int):
     """Returns a CNN model used in cot
     """
     model = models.Sequential()
-    input_shape = (width, height, depth)
-    model.add(layers.InputLayer(input_shape=input_shape))
+    model.add(layers.InputLayer(input_shape=shape))
     model.add(layers.Conv2D(128, (3, 3), activation=lrelu, padding="valid"))
     model.add(layers.BatchNormalization())
     model.add(layers.Conv2D(128, (3, 3), activation=lrelu, padding="valid"))
