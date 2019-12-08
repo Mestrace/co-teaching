@@ -1,8 +1,3 @@
-% This is a modification to the normal ieee.bst used by CVPR to render
-% first names in the bibliography as "Firstname Lastname" rather than
-% "F. Lastname".
-%
-% Jonathan T. Barron, 12/5/2018, jonbarron@gmail.com
 
 % ---------------------------------------------------------------
 %
@@ -212,8 +207,7 @@ FUNCTION {format.names}
   s num.names$ 'numnames :=
   numnames 'namesleft :=
     { namesleft #0 > }
-    % Formerly { s nameptr "{f.~}{vv~}{ll}{, jj}" format.name$ 't :=
-    { s nameptr "{ff }{vv }{ll}{, jj}" format.name$ 't :=
+    { s nameptr "{f.~}{vv~}{ll}{, jj}" format.name$ 't :=
       nameptr #1 >
  { namesleft #1 >
      { ", " * t * }
