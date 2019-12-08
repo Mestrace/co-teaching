@@ -126,3 +126,7 @@ dmypy.json
 
 # vscode
 .vscode/
+
+# latex
+*.sty
+*.bst
